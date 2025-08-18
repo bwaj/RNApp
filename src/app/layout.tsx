@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import AuthSessionProvider from "@/components/providers/session-provider";
+import UserMenu from "@/components/auth/user-menu";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +29,25 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthSessionProvider>
+          <div className="min-h-screen bg-white">
+            <header className="bg-white border-b border-gray-200">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-center h-16">
+                  <div className="flex items-center">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                      Music Tracker
+                    </h1>
+                  </div>
+                  <UserMenu />
+                </div>
+              </div>
+            </header>
+            <main>
+              {children}
+            </main>
+          </div>
+        </AuthSessionProvider>
       </body>
     </html>
   );

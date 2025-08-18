@@ -17,9 +17,11 @@
     "db:seed": "tsx src/lib/db/seed.ts"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.10.0",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "next": "15.4.6",
+    "next-auth": "^4.24.11",
     "pg": "^8.16.3",
     "react": "19.1.0",
     "react-dom": "19.1.0"
