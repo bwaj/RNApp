@@ -1,45 +1,53 @@
 import { requireAuth } from '@/lib/auth/session'
 import SpotifyConnectionCard from '@/components/spotify/connection-card'
-import StatsOverview from '@/components/dashboard/stats-overview'
-import TopArtists from '@/components/dashboard/top-artists'
-import TopTracks from '@/components/dashboard/top-tracks'
-import RecentTracks from '@/components/dashboard/recent-tracks'
+import { 
+  LazyStatsOverview,
+  LazyTopArtists,
+  LazyTopTracks,
+  LazyRecentTracks
+} from '@/components/lazy/lazy-dashboard'
+import SkipNavigation from '@/components/accessibility/skip-navigation'
+import { dashboardMetadata } from '@/lib/seo/metadata'
+
+export const metadata = dashboardMetadata
 
 export default async function DashboardPage() {
   const user = await requireAuth()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user.name}!
-          </h1>
-          <p className="text-lg text-gray-600 mt-2">
-            Track your music listening habits and discover your patterns
-          </p>
-        </div>
-
-        <div className="space-y-8">
-          {/* Spotify Connection */}
-          <SpotifyConnectionCard />
-
-          {/* Stats Overview */}
-          <StatsOverview userId={user.id} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Top Artists */}
-            <TopArtists userId={user.id} limit={8} />
-            
-            {/* Top Tracks */}
-            <TopTracks userId={user.id} limit={8} />
+    <>
+      <SkipNavigation />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 id="main-content" className="text-3xl font-bold text-gray-900" tabIndex={-1}>
+              Welcome back, {user.name}!
+            </h1>
+            <p className="text-lg text-gray-600 mt-2">
+              Track your music listening habits and discover your patterns
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Recent Tracks - Full Width */}
-            <div className="lg:col-span-2">
-              <RecentTracks userId={user.id} limit={15} />
+          <div className="space-y-8">
+            {/* Spotify Connection */}
+            <SpotifyConnectionCard />
+
+            {/* Stats Overview */}
+            <LazyStatsOverview userId={user.id} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Top Artists */}
+              <LazyTopArtists userId={user.id} limit={8} />
+              
+              {/* Top Tracks */}
+              <LazyTopTracks userId={user.id} limit={8} />
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Recent Tracks - Full Width */}
+              <div className="lg:col-span-2">
+                <LazyRecentTracks userId={user.id} limit={15} />
+              </div>
 
             {/* Quick Actions & Info */}
             <div className="space-y-6">
@@ -120,5 +128,6 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
