@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { MusicDataQueries } from '@/lib/db/queries'
+import { CacheService } from '@/lib/cache/redis'
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,14 +42,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const topArtists = await MusicDataQueries.getTopArtists(
-      user.id,
-      limit,
-      startDate,
-      endDate
-    )
+    // Use caching for better performance
+    const topArtists = await CacheService.getTopArtists(user.id, timeRange, limit, async () => {
+      return await MusicDataQueries.getTopArtists(
+        user.id,
+        limit,
+        startDate,
+        endDate
+      )
+    })
     
-    return NextResponse.json(topArtists)
+    return NextResponse.json(topArtists, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=86400'
+      }
+    })
   } catch (error) {
     console.error('Top artists error:', error)
     return NextResponse.json(

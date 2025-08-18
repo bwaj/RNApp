@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
 import { MusicDataQueries } from '@/lib/db/queries'
+import { CacheService } from '@/lib/cache/redis'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,9 +19,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const stats = await MusicDataQueries.getUserListeningStats(user.id)
+    // Use caching for better performance
+    const stats = await CacheService.getUserStats(user.id, async () => {
+      return await MusicDataQueries.getUserListeningStats(user.id)
+    })
     
-    return NextResponse.json(stats)
+    return NextResponse.json(stats, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400'
+      }
+    })
   } catch (error) {
     console.error('Dashboard stats error:', error)
     return NextResponse.json(
