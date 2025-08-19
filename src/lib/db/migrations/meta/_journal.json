@@ -8,6 +8,13 @@
       "when": 1755537134746,
       "tag": "0000_woozy_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755624141448,
+      "tag": "0001_square_corsair",
+      "breakpoints": true
     }
   ]
 }
