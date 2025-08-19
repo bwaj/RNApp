@@ -12,8 +12,6 @@ import {
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
-// NextAuth.js compatible tables
-
 // Users table - NextAuth.js compatible
 export const users = pgTable('user', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -170,7 +168,7 @@ export const albumArtists = pgTable('album_artists', {
 // Listening History - core table storing individual play events
 export const listeningHistory = pgTable('listening_history', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   trackId: uuid('track_id').references(() => tracks.id).notNull(),
   playedAt: timestamp('played_at').notNull(),
   context: jsonb('context'), // playlist, album, artist radio, etc.
@@ -188,7 +186,7 @@ export const listeningHistory = pgTable('listening_history', {
 // User Stats Cache - pre-computed statistics for performance
 export const userStats = pgTable('user_stats', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   timeRange: text('time_range').notNull(), // short_term, medium_term, long_term
   statType: text('stat_type').notNull(), // top_artists, top_tracks, genres, listening_time
   data: jsonb('data').notNull(), // flexible JSON structure for different stat types
@@ -203,25 +201,10 @@ export const userStats = pgTable('user_stats', {
 }))
 
 // Define relationships
-export const usersRelations = relations(users, ({ many, one }) => ({
-  accounts: many(accounts),
-  sessions: many(sessions),
-  userProfile: one(userProfiles),
+export const usersRelations = relations(users, ({ many }) => ({
   spotifyConnections: many(spotifyConnections),
   listeningHistory: many(listeningHistory),
   userStats: many(userStats),
-}))
-
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, { fields: [accounts.userId], references: [users.id] }),
-}))
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}))
-
-export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
-  user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
 }))
 
 export const spotifyConnectionsRelations = relations(spotifyConnections, ({ one }) => ({
@@ -293,12 +276,6 @@ export const userStatsRelations = relations(userStats, ({ one }) => ({
 // Type exports for use throughout the application
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
-export type Account = typeof accounts.$inferSelect
-export type NewAccount = typeof accounts.$inferInsert
-export type Session = typeof sessions.$inferSelect
-export type NewSession = typeof sessions.$inferInsert
-export type UserProfile = typeof userProfiles.$inferSelect
-export type NewUserProfile = typeof userProfiles.$inferInsert
 export type SpotifyConnection = typeof spotifyConnections.$inferSelect
 export type NewSpotifyConnection = typeof spotifyConnections.$inferInsert
 export type Artist = typeof artists.$inferSelect
