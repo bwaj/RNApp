@@ -72,7 +72,7 @@ export const userProfiles = pgTable('user_profile', {
   googleIdIdx: index('user_profiles_google_id_idx').on(table.googleId),
 }))
 
-// Spotify connections - manages Spotify OAuth tokens and connection status
+// Spotify connections - manages Spotify OAuth tokens and connection status  
 export const spotifyConnections = pgTable('spotify_connections', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),

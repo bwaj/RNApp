@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set('spotify_auth_state', state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to 'lax' for OAuth flow
       maxAge: 10 * 60, // 10 minutes
     })
     

@@ -1,6 +1,7 @@
 import { db } from './config'
 import { 
   users, 
+  userProfiles,
   spotifyConnections, 
   artists, 
   albums, 
@@ -10,6 +11,7 @@ import {
   listeningHistory,
   userStats,
   type NewUser,
+  type NewUserProfile,
   type NewSpotifyConnection,
   type NewArtist,
   type NewAlbum,
@@ -27,8 +29,20 @@ export const userOperations = {
   },
 
   async findByGoogleId(googleId: string) {
-    const [user] = await db.select().from(users).where(eq(users.googleId, googleId))
-    return user || null
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        emailVerified: users.emailVerified,
+        image: users.image,
+        googleId: userProfiles.googleId,
+      })
+      .from(users)
+      .innerJoin(userProfiles, eq(users.id, userProfiles.userId))
+      .where(eq(userProfiles.googleId, googleId))
+    
+    return result[0] || null
   },
 
   async findByEmail(email: string) {
@@ -51,6 +65,11 @@ export const userOperations = {
 
   async delete(id: string) {
     await db.delete(users).where(eq(users.id, id))
+  },
+
+  async createProfile(profileData: NewUserProfile) {
+    const [profile] = await db.insert(userProfiles).values(profileData).returning()
+    return profile
   }
 }
 

@@ -1,7 +1,5 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { DrizzleAdapter } from '@auth/drizzle-adapter'
-import { db } from '@/lib/db/config'
 import { userOperations } from '@/lib/db/operations'
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -27,8 +25,6 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
-  
-  adapter: DrizzleAdapter(db),
   
   session: {
     strategy: 'jwt',
@@ -67,19 +63,19 @@ export const authOptions: NextAuthOptions = {
           let existingUser = await userOperations.findByGoogleId(profile.sub)
           
           if (!existingUser) {
-            // Create new user
-            existingUser = await userOperations.create({
-              googleId: profile.sub,
+            // Create new user with NextAuth.js compatible format
+            const newUser = await userOperations.create({
+              id: profile.sub, // Use Google ID as primary key
+              name: profile.name!,
               email: profile.email!,
-              name: profile.name!,
-              avatar: profile.picture,
+              image: profile.picture,
+              emailVerified: profile.email_verified ? new Date() : null
             })
-          } else {
-            // Update existing user info
-            await userOperations.update(existingUser.id, {
-              name: profile.name!,
-              avatar: profile.picture,
-              email: profile.email!, // In case email changed
+            
+            // Also create user profile entry
+            await userOperations.createProfile({
+              userId: newUser.id,
+              googleId: profile.sub
             })
           }
           
