@@ -172,6 +172,16 @@ export const trackOperations = {
   async findById(id: string) {
     const [track] = await db.select().from(tracks).where(eq(tracks.id, id))
     return track || null
+  },
+
+  async linkArtist(trackId: string, artistId: string) {
+    // Check if relationship already exists to avoid duplicates
+    const [existing] = await db.select().from(trackArtists)
+      .where(and(eq(trackArtists.trackId, trackId), eq(trackArtists.artistId, artistId)))
+    
+    if (!existing) {
+      await db.insert(trackArtists).values({ trackId, artistId })
+    }
   }
 }
 

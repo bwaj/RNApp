@@ -169,7 +169,8 @@ export class SpotifyDataSync {
     // Note: We'll need to implement album operations similar to artists
     // For now, we'll handle this in the track operations
     
-    // Process track artists
+    // Process track artists and store them for relationship creation
+    const artistIds: string[] = []
     for (const artist of spotifyTrack.artists) {
       const artistData: NewArtist = {
         spotifyId: artist.id,
@@ -181,7 +182,8 @@ export class SpotifyDataSync {
         followers: null
       }
       
-      await artistOperations.upsert(artistData)
+      const savedArtist = await artistOperations.upsert(artistData)
+      artistIds.push(savedArtist.id)
     }
 
     // Process the track
@@ -198,7 +200,14 @@ export class SpotifyDataSync {
       audioFeatures: null // We'll fetch this separately if needed
     }
 
-    return await trackOperations.upsert(trackData)
+    const savedTrack = await trackOperations.upsert(trackData)
+
+    // Create track-to-artist relationships
+    for (const artistId of artistIds) {
+      await trackOperations.linkArtist(savedTrack.id, artistId)
+    }
+
+    return savedTrack
   }
 
   /**
