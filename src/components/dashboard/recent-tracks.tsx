@@ -163,8 +163,8 @@ export default function RecentTracks({ userId, limit = 20 }: RecentTracksProps) 
       ) : (
         <>
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {tracks.map((trackData) => (
-              <div key={trackData.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150 group">
+            {tracks.map((trackData, index) => (
+              <div key={`${trackData.id}-${index}`} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-150 group">
                 <div className="flex-shrink-0">
                   {trackData.album?.imageUrl ? (
                     <Image

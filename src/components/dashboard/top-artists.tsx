@@ -139,7 +139,7 @@ export default function TopArtists({ userId, timeRange = 'month', limit = 10 }: 
       ) : (
         <div className="space-y-4">
           {artists.map((artistData, index) => (
-            <div key={artistData.artist.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-150">
+            <div key={`${artistData.artist.id}-${index}`} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-150">
               <div className="flex-shrink-0">
                 <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-500 text-white text-sm font-medium">
                   {index + 1}

@@ -151,7 +151,7 @@ export default function TopTracks({ userId, timeRange = 'month', limit = 10 }: T
       ) : (
         <div className="space-y-4">
           {tracks.map((trackData, index) => (
-            <div key={trackData.track.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-150 group">
+            <div key={`${trackData.track.id}-${index}`} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-150 group">
               <div className="flex-shrink-0">
                 <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-500 text-white text-sm font-medium">
                   {index + 1}
