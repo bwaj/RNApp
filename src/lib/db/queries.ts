@@ -271,6 +271,8 @@ export class MusicDataQueries {
   ): Promise<RecentTrackData[]> {
     const primaryArtist = alias(artists, 'primaryArtist')
     
+    // Use DISTINCT ON to get only one row per listening history entry
+    // This prevents duplicates when tracks have multiple artists
     const results = await db
       .select({
         id: listeningHistory.id,
@@ -299,6 +301,21 @@ export class MusicDataQueries {
       .leftJoin(trackArtists, eq(tracks.id, trackArtists.trackId))
       .leftJoin(primaryArtist, eq(trackArtists.artistId, primaryArtist.id))
       .where(eq(listeningHistory.userId, userId))
+      .groupBy(
+        listeningHistory.id, 
+        listeningHistory.playedAt,
+        tracks.id, 
+        tracks.name, 
+        tracks.spotifyId, 
+        tracks.durationMs, 
+        tracks.previewUrl,
+        albums.id,
+        albums.name,
+        albums.imageUrl,
+        primaryArtist.id,
+        primaryArtist.name,
+        primaryArtist.imageUrl
+      )
       .orderBy(desc(listeningHistory.playedAt))
       .limit(limit)
       .offset(offset)
