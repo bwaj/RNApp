@@ -16,6 +16,17 @@ export default function StatsOverview({ userId }: StatsOverviewProps) {
     fetchStats()
   }, [userId])
 
+  // Listen for sync completion to refresh data
+  useEffect(() => {
+    const handleSyncCompleted = () => {
+      console.log('Refreshing stats after sync...')
+      fetchStats()
+    }
+
+    window.addEventListener('spotify-sync-completed', handleSyncCompleted)
+    return () => window.removeEventListener('spotify-sync-completed', handleSyncCompleted)
+  }, [userId])
+
   const fetchStats = async () => {
     try {
       setIsLoading(true)
@@ -45,7 +56,10 @@ export default function StatsOverview({ userId }: StatsOverviewProps) {
     return `${minutes}m`
   }
 
-  const formatNumber = (num: number): string => {
+  const formatNumber = (num: number | null | undefined): string => {
+    if (num == null || isNaN(num)) {
+      return '0'
+    }
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`
     }

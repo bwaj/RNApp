@@ -20,6 +20,17 @@ export default function TopArtists({ userId, timeRange = 'month', limit = 10 }: 
     fetchTopArtists()
   }, [userId, selectedTimeRange, limit])
 
+  // Listen for sync completion to refresh data
+  useEffect(() => {
+    const handleSyncCompleted = () => {
+      console.log('Refreshing top artists after sync...')
+      fetchTopArtists()
+    }
+
+    window.addEventListener('spotify-sync-completed', handleSyncCompleted)
+    return () => window.removeEventListener('spotify-sync-completed', handleSyncCompleted)
+  }, [userId, selectedTimeRange])
+
   const fetchTopArtists = async () => {
     try {
       setIsLoading(true)

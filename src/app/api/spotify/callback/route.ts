@@ -35,8 +35,19 @@ export async function GET(request: NextRequest) {
     // Exchange code for tokens
     const tokenResponse = await SpotifyAuth.exchangeCodeForTokens(code)
     
-    // Get Spotify user info
-    const spotifyUser = await SpotifyAPI.getCurrentUser(user.id)
+    // Get Spotify user info using the fresh access token
+    const spotifyUserResponse = await fetch('https://api.spotify.com/v1/me', {
+      headers: {
+        'Authorization': `Bearer ${tokenResponse.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!spotifyUserResponse.ok) {
+      throw new Error('Failed to fetch Spotify user info')
+    }
+    
+    const spotifyUser = await spotifyUserResponse.json()
     
     // Calculate token expiration
     const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000)

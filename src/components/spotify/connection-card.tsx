@@ -79,6 +79,11 @@ export default function SpotifyConnectionCard() {
         const result = await response.json()
         console.log('Sync completed:', result)
         await fetchConnectionStatus() // Refresh status
+        
+        // Emit custom event to notify other components to refresh
+        window.dispatchEvent(new CustomEvent('spotify-sync-completed', {
+          detail: result
+        }))
       } else {
         throw new Error('Failed to sync')
       }

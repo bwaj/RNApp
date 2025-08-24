@@ -20,6 +20,17 @@ export default function TopTracks({ userId, timeRange = 'month', limit = 10 }: T
     fetchTopTracks()
   }, [userId, selectedTimeRange, limit])
 
+  // Listen for sync completion to refresh data
+  useEffect(() => {
+    const handleSyncCompleted = () => {
+      console.log('Refreshing top tracks after sync...')
+      fetchTopTracks()
+    }
+
+    window.addEventListener('spotify-sync-completed', handleSyncCompleted)
+    return () => window.removeEventListener('spotify-sync-completed', handleSyncCompleted)
+  }, [userId, selectedTimeRange])
+
   const fetchTopTracks = async () => {
     try {
       setIsLoading(true)

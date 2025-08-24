@@ -20,6 +20,17 @@ export default function RecentTracks({ userId, limit = 20 }: RecentTracksProps) 
     fetchRecentTracks(true)
   }, [userId, limit])
 
+  // Listen for sync completion to refresh data
+  useEffect(() => {
+    const handleSyncCompleted = () => {
+      console.log('Refreshing recent tracks after sync...')
+      fetchRecentTracks(true)
+    }
+
+    window.addEventListener('spotify-sync-completed', handleSyncCompleted)
+    return () => window.removeEventListener('spotify-sync-completed', handleSyncCompleted)
+  }, [userId])
+
   const fetchRecentTracks = async (reset = false) => {
     try {
       if (reset) {

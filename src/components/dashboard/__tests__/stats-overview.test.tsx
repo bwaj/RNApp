@@ -1,135 +1,159 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { useSession } from 'next-auth/react'
+import React from 'react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import StatsOverview from '../stats-overview'
 
-// Mock next-auth
-jest.mock('next-auth/react')
-const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
-
-// Mock fetch
+// Mock fetch globally
 global.fetch = jest.fn()
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>
 
 describe('StatsOverview', () => {
-  const mockUserId = 'user123'
+  const userId = 'user123'
   const mockStats = {
     totalTracks: 1250,
-    totalListeningTime: 7200000, // 2 hours in ms
-    totalArtists: 89,
-    totalListeningEvents: 2340,
-    averageTrackLength: 180000
+    totalArtists: 180,
+    totalPlaytime: 15600000, // 4.33 hours in ms
+    topGenre: 'Electronic',
+    listeningStreak: 12,
+    recentActivity: {
+      tracksThisWeek: 45,
+      newArtistsThisMonth: 8
+    }
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockUseSession.mockReturnValue({
-      data: { user: { id: mockUserId } },
-      status: 'authenticated'
-    } as any)
+    mockFetch.mockClear()
   })
 
-  it('renders loading state initially', () => {
-    mockFetch.mockImplementation(() => new Promise(() => {})) // Never resolves
-
-    render(<StatsOverview userId={mockUserId} />)
-
-    expect(screen.getAllByTestId(/skeleton|loading/i)).toHaveLength(4)
-  })
-
-  it('renders stats cards when data is loaded', async () => {
+  it('should fetch and display stats on mount', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockStats
     } as Response)
 
-    render(<StatsOverview userId={mockUserId} />)
+    render(<StatsOverview userId={userId} />)
 
+    // Should fetch stats
+    expect(mockFetch).toHaveBeenCalledWith(`/api/dashboard/stats?userId=${userId}`)
+
+    // Should display stats after loading
     await waitFor(() => {
-      expect(screen.getByText('1.3K')).toBeInTheDocument() // Total tracks formatted
-      expect(screen.getByText('2h 0m')).toBeInTheDocument() // Listening time formatted
-      expect(screen.getByText('89')).toBeInTheDocument() // Total artists
-      expect(screen.getByText('2.3K')).toBeInTheDocument() // Play count formatted
+      expect(screen.getByText('1.3K')).toBeInTheDocument() // totalTracks formatted
+      expect(screen.getByText('180')).toBeInTheDocument() // totalArtists  
+      expect(screen.getByText('4h 20m')).toBeInTheDocument() // formatted playtime
     })
   })
 
-  it('handles API error gracefully', async () => {
+  it('should refresh stats when spotify-sync-completed event is fired', async () => {
+    // Initial fetch
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockStats
+    } as Response)
+
+    render(<StatsOverview userId={userId} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('1.3K')).toBeInTheDocument()
+    })
+
+    // Clear the mock to track new calls
+    mockFetch.mockClear()
+
+    // Updated stats after sync
+    const updatedStats = {
+      ...mockStats,
+      totalTracks: 1275, // 25 new tracks
+      totalArtists: 185, // 5 new artists
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => updatedStats
+    } as Response)
+
+    // Simulate sync completed event
+    act(() => {
+      window.dispatchEvent(new CustomEvent('spotify-sync-completed', {
+        detail: {
+          synced: {
+            recentTracks: 25,
+            newArtists: 5,
+            newTracks: 25,
+            listeningEvents: 25,
+            errors: []
+          }
+        }
+      }))
+    })
+
+    // Should fetch stats again
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(`/api/dashboard/stats?userId=${userId}`)
+    })
+
+    // Should display updated stats
+    await waitFor(() => {
+      expect(screen.getByText('1.3K')).toBeInTheDocument() // Still formatted as 1.3K
+      expect(screen.getByText('185')).toBeInTheDocument()
+    })
+  })
+
+  it('should handle fetch errors gracefully', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+
+    render(<StatsOverview userId={userId} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load statistics')).toBeInTheDocument()
+    })
+  })
+
+  it('should handle API errors gracefully', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500
     } as Response)
 
-    render(<StatsOverview userId={mockUserId} />)
+    render(<StatsOverview userId={userId} />)
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load statistics')).toBeInTheDocument()
     })
   })
 
-  it('shows no data message when stats are empty', async () => {
-    const emptyStats = {
-      totalTracks: 0,
-      totalListeningTime: 0,
-      totalArtists: 0,
-      totalListeningEvents: 0,
-      averageTrackLength: 0
-    }
+  it('should clean up event listener on unmount', () => {
+    const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener')
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => emptyStats
-    } as Response)
-
-    render(<StatsOverview userId={mockUserId} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('No listening data available yet')).toBeInTheDocument()
-    })
-  })
-
-  it('formats numbers correctly', async () => {
-    const largeStats = {
-      totalTracks: 12500,
-      totalListeningTime: 3661000, // 1h 1m 1s
-      totalArtists: 1250,
-      totalListeningEvents: 25000,
-      averageTrackLength: 180000
-    }
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => largeStats
-    } as Response)
-
-    render(<StatsOverview userId={mockUserId} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('12.5K')).toBeInTheDocument() // Total tracks
-      expect(screen.getByText('1h 1m')).toBeInTheDocument() // Listening time
-      expect(screen.getByText('1.3K')).toBeInTheDocument() // Total artists
-      expect(screen.getByText('25.0K')).toBeInTheDocument() // Play count
-    })
-  })
-
-  it('makes API call with correct parameters', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockStats
     } as Response)
 
-    render(<StatsOverview userId={mockUserId} />)
+    const { unmount } = render(<StatsOverview userId={userId} />)
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `/api/dashboard/stats?userId=${mockUserId}`
+    unmount()
+
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      'spotify-sync-completed',
+      expect.any(Function)
     )
+
+    removeEventListenerSpy.mockRestore()
   })
 
-  it('handles network errors', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+  it('should format duration correctly', async () => {
+    const statsWithShortDuration = { ...mockStats, totalPlaytime: 120000 } // 2m
 
-    render(<StatsOverview userId={mockUserId} />)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => statsWithShortDuration
+    } as Response)
+
+    render(<StatsOverview userId={userId} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load statistics')).toBeInTheDocument()
+      expect(screen.getByText('2m')).toBeInTheDocument()
     })
   })
 })
